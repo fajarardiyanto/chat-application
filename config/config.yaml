@@ -1,0 +1,32 @@
+version: v1.0.0
+name: App Name
+port: 8082
+message: CHAT_MESSAGE
+database:
+    sql:
+        enable: true
+        driver: mysql
+        host: 127.0.0.1
+        port: 3306
+        username: root
+        password: root
+        database: chat_sqe
+        options: ""
+        connection: ""
+        autoReconnect: true
+        startInterval: 2
+        maxError: 5
+        sslmode: ""
+        timeoutConnection: 5
+        customPool: true
+        maxConn: 15
+        maxIdle: 15
+        lifeTime: 15
+    rabbitmq:
+        enable: true
+        host: "127.0.0.1"
+        port: 5672
+        username: "guest"
+        password: "guest"
+        reconnectDuration: 2
+        dedicatedConnection: false

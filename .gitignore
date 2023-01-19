@@ -1,0 +1,9 @@
+.idea/
+.vscode/
+client/
+libs/
+bin/
+tmp/
+run.sh
+sqlservertest
+*.app
