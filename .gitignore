@@ -5,6 +5,7 @@ client/
 libs/
 bin/
 tmp/
+external/files
 run.sh
 sqlservertest
 *.app

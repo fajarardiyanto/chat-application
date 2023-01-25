@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"github.com/fajarardiyanto/chat-application/config"
 	"github.com/fajarardiyanto/chat-application/internal/model"
-	"github.com/fajarardiyanto/chat-application/pkg/utils"
+	"github.com/fajarardiyanto/chat-application/pkg/auth"
 	"github.com/fajarardiyanto/flt-go-database/interfaces"
 	"github.com/gorilla/websocket"
 	"net/http"
@@ -45,9 +45,16 @@ func (s *wsHandler) ServeWs(w http.ResponseWriter, r *http.Request) {
 	clients[client] = true
 	s.Unlock()
 
+	token, err := auth.ExtractTokenID(r)
+	if err != nil {
+		config.GetLogger().Error(err)
+		return
+	}
+
 	s.Lock()
-	client.Username = utils.QueryString(r, "user")
+	client.Username = token.ID
 	s.Unlock()
+	config.GetLogger().Info("%s is connected", token.Username)
 
 	s.Receiver(client)
 

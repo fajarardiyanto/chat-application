@@ -34,28 +34,25 @@ func Api(cmd *cobra.Command, args []string) error {
 	r := mux.NewRouter()
 	r.Use(middleware.SetMiddlewareJSON)
 
-	{
-		r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			model.MessageSuccess(w, http.StatusOK, "OK")
-		}).Methods(http.MethodGet)
-		r.HandleFunc("/register", userHandler.RegisterHandler).Methods(http.MethodPost)
-		r.HandleFunc("/login", userHandler.LoginHandler).Methods(http.MethodPost)
-	}
+	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		model.MessageSuccess(w, http.StatusOK, "OK")
+	}).Methods(http.MethodGet)
+	r.HandleFunc("/register", userHandler.RegisterHandler).Methods(http.MethodPost)
+	r.HandleFunc("/login", userHandler.LoginHandler).Methods(http.MethodPost)
 
-	r.Use(middleware.AuthMiddleware)
+	secure := r.PathPrefix("/auth").Subrouter()
+	secure.Use(middleware.AuthMiddleware)
 
-	{
-		r.HandleFunc("/contact-list", userHandler.ContactListHandler).Methods(http.MethodGet)
-		r.HandleFunc("/update/status", userHandler.UpdateStatusHandler).Methods(http.MethodPost)
+	secure.HandleFunc("/contact-list", userHandler.ContactListHandler).Methods(http.MethodGet)
+	secure.HandleFunc("/update/status", userHandler.UpdateStatusHandler).Methods(http.MethodPost)
 
-		r.HandleFunc("/create-chat", chatHandler.CreateMessageHandler).Methods(http.MethodPost)
-		r.HandleFunc("/chat-history", chatHandler.ChatHistoryHandler).Methods(http.MethodGet)
-		r.HandleFunc("/files", chatHandler.SaveFileChat).Methods(http.MethodPost)
-		r.HandleFunc("/static", chatHandler.StaticFile).Methods(http.MethodGet)
+	secure.HandleFunc("/create-chat", chatHandler.CreateMessageHandler).Methods(http.MethodPost)
+	secure.HandleFunc("/chat-history", chatHandler.ChatHistoryHandler).Methods(http.MethodGet)
+	secure.HandleFunc("/files", chatHandler.SaveFileChat).Methods(http.MethodPost)
+	secure.HandleFunc("/static", chatHandler.StaticFile).Methods(http.MethodGet)
 
-		go wsHandler.BroadcastWebSocket()
-		r.HandleFunc("/ws", wsHandler.ServeWs)
-	}
+	go wsHandler.BroadcastWebSocket()
+	secure.HandleFunc("/ws", wsHandler.ServeWs)
 
 	go func() {
 		port := fmt.Sprintf(":%s", config.GetConfig().Port)

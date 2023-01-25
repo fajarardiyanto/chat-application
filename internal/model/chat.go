@@ -35,16 +35,6 @@ type Document struct {
 	Total   int64  `json:"total"`
 }
 
-type UserReq struct {
-	Username string `json:"username" gorm:"column:username"`
-	Password string `json:"password" gorm:"column:password"`
-	Client   string `json:"client"`
-}
-
-func (*UserReq) TableName() string {
-	return "user"
-}
-
 type Response struct {
 	Status  bool        `json:"status"`
 	Message string      `json:"message,omitempty"`

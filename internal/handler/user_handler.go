@@ -5,13 +5,16 @@ import (
 	"fmt"
 	"github.com/fajarardiyanto/chat-application/config"
 	"github.com/fajarardiyanto/chat-application/internal/model"
+	"github.com/fajarardiyanto/chat-application/internal/model/constant"
 	"github.com/fajarardiyanto/chat-application/internal/repo"
 	"github.com/fajarardiyanto/chat-application/pkg/auth"
 	"github.com/fajarardiyanto/chat-application/pkg/utils"
 	"net/http"
+	"sync"
 )
 
 type UserHandler struct {
+	sync.Mutex
 	repo repo.UserRepository
 }
 
@@ -48,7 +51,7 @@ func (s *UserHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *UserHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
-	u := &model.UserReq{}
+	u := &model.UserReqModel{}
 	if err := json.NewDecoder(r.Body).Decode(u); err != nil {
 		model.MessageError(w, http.StatusBadRequest, "error decoding request object")
 		return
@@ -97,12 +100,23 @@ func (s *UserHandler) ContactListHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	var wg sync.WaitGroup
 	data := make([]model.UserModel, 0)
+
 	for _, v := range res {
-		if v.Username != username {
-			data = append(data, v)
-		}
+		wg.Add(1)
+
+		go func(wg *sync.WaitGroup, v model.UserModel) {
+			defer wg.Done()
+
+			if v.Username != username {
+				s.Lock()
+				data = append(data, v)
+				s.Unlock()
+			}
+		}(&wg, v)
 	}
+	wg.Wait()
 
 	model.MessageSuccess(w, http.StatusOK, res)
 }
@@ -114,7 +128,9 @@ func (s *UserHandler) UpdateStatusHandler(w http.ResponseWriter, r *http.Request
 
 	userLife := s.repo.CheckUserLife(id)
 	if !userLife {
+		s.Lock()
 		status = true
+		s.Unlock()
 	}
 
 	if err := s.repo.UpdateStatus(id, status); err != nil {
@@ -122,7 +138,7 @@ func (s *UserHandler) UpdateStatusHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	msg := fmt.Sprintf("Successfully update user to %v\n", model.StatusActivity[status])
+	msg := fmt.Sprintf("Successfully update user to %v\n", constant.StatusActivity[status])
 
 	model.MessageSuccessText(w, http.StatusOK, msg)
 }

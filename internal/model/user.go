@@ -32,8 +32,3 @@ type UserResponseModel struct {
 func (*UserModel) TableName() string {
 	return "user"
 }
-
-var StatusActivity = map[bool]string{
-	false: "Offline",
-	true:  "Online",
-}

@@ -5,6 +5,7 @@ import (
 	"github.com/fajarardiyanto/chat-application/config"
 	"github.com/fajarardiyanto/chat-application/internal/model"
 	"github.com/fajarardiyanto/chat-application/internal/repo"
+	"github.com/fajarardiyanto/chat-application/pkg/auth"
 	"github.com/fajarardiyanto/chat-application/pkg/utils"
 	"net/http"
 )
@@ -24,9 +25,16 @@ func (s *ChatHandler) CreateMessageHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	token, err := auth.ExtractTokenID(r)
+	if err != nil {
+		config.GetLogger().Error(err)
+		return
+	}
+
 	req := model.Chat{
-		Msg: u.Message,
-		To:  u.To,
+		Msg:  u.Message,
+		To:   u.To,
+		From: token.ID,
 	}
 
 	chat, err := s.repo.CreateChat(req)
@@ -41,10 +49,15 @@ func (s *ChatHandler) CreateMessageHandler(w http.ResponseWriter, r *http.Reques
 }
 
 func (s *ChatHandler) ChatHistoryHandler(w http.ResponseWriter, r *http.Request) {
-	from := utils.QueryString(r, "from")
 	to := utils.QueryString(r, "to")
 
-	chats, err := s.repo.GetChat(from, to)
+	token, err := auth.ExtractTokenID(r)
+	if err != nil {
+		config.GetLogger().Error(err)
+		return
+	}
+
+	chats, err := s.repo.GetChat(token.ID, to)
 	if err != nil {
 		model.MessageError(w, http.StatusInternalServerError, err.Error())
 		return
