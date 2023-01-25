@@ -6,6 +6,7 @@ import (
 	"github.com/fajarardiyanto/chat-application/config"
 	"github.com/fajarardiyanto/chat-application/internal/model"
 	"github.com/fajarardiyanto/chat-application/internal/repo"
+	"github.com/fajarardiyanto/chat-application/pkg/auth"
 	"github.com/fajarardiyanto/chat-application/pkg/utils"
 	"net/http"
 )
@@ -21,12 +22,12 @@ func NewUserHandler(repo repo.UserRepository) *UserHandler {
 func (s *UserHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	u := model.UserReqModel{}
 	if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
-		utils.MessageError(w, http.StatusBadRequest, "error decoding request object")
+		model.MessageError(w, http.StatusBadRequest, "error decoding request object")
 		return
 	}
 
-	if err := s.repo.UserExist(u.Username); err == nil {
-		utils.MessageError(w, http.StatusFound, "username already exist!")
+	if _, err := s.repo.UserExist(u.Username); err == nil {
+		model.MessageError(w, http.StatusFound, "username already exist!")
 		return
 	}
 
@@ -39,26 +40,52 @@ func (s *UserHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	res, err := s.repo.Register(req)
 	if err != nil {
 		config.GetLogger().Error(err.Error())
-		utils.MessageError(w, http.StatusInternalServerError, "something went wrong while registering the user. please try again after sometime.")
+		model.MessageError(w, http.StatusInternalServerError, "something went wrong while registering the user. please try again after sometime.")
 		return
 	}
 
-	utils.MessageSuccess(w, http.StatusOK, res)
+	model.MessageSuccess(w, http.StatusOK, res)
 }
 
 func (s *UserHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	u := &model.UserReq{}
 	if err := json.NewDecoder(r.Body).Decode(u); err != nil {
-		utils.MessageError(w, http.StatusBadRequest, "error decoding request object")
+		model.MessageError(w, http.StatusBadRequest, "error decoding request object")
 		return
 	}
 
-	if err := s.repo.UserExist(u.Username); err != nil {
-		utils.MessageError(w, http.StatusNotFound, "username not found!")
+	res, err := s.repo.UserExist(u.Username)
+	if err != nil {
+		config.GetLogger().Error(err)
+		model.MessageError(w, http.StatusNotFound, "Invalid username/password")
 		return
 	}
 
-	utils.MessageSuccessText(w, http.StatusOK, "Successfully login")
+	if err = utils.VerifyPassword(res.Password, u.Password); err != nil {
+		config.GetLogger().Error(err)
+		model.MessageError(w, http.StatusBadRequest, "Invalid username/password")
+		return
+	}
+
+	userToken := model.UserTokenModel{
+		ID:       res.ID,
+		Username: res.Username,
+		UserType: res.UserType,
+	}
+
+	token, err := auth.CreateToken(userToken)
+	if err != nil {
+		config.GetLogger().Error(err)
+		model.MessageError(w, http.StatusInternalServerError, "Something went wrong")
+		return
+	}
+
+	response := model.UserResponseModel{
+		User:  *res,
+		Token: token,
+	}
+
+	model.MessageSuccess(w, http.StatusOK, response)
 }
 
 func (s *UserHandler) ContactListHandler(w http.ResponseWriter, r *http.Request) {
@@ -66,7 +93,7 @@ func (s *UserHandler) ContactListHandler(w http.ResponseWriter, r *http.Request)
 
 	res, err := s.repo.GetUser()
 	if err != nil {
-		utils.MessageError(w, http.StatusNotFound, "no contacts found!")
+		model.MessageError(w, http.StatusNotFound, "no contacts found!")
 		return
 	}
 
@@ -77,7 +104,7 @@ func (s *UserHandler) ContactListHandler(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
-	utils.MessageSuccess(w, http.StatusOK, res)
+	model.MessageSuccess(w, http.StatusOK, res)
 }
 
 func (s *UserHandler) UpdateStatusHandler(w http.ResponseWriter, r *http.Request) {
@@ -91,11 +118,11 @@ func (s *UserHandler) UpdateStatusHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	if err := s.repo.UpdateStatus(id, status); err != nil {
-		utils.MessageError(w, http.StatusInternalServerError, err.Error())
+		model.MessageError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	msg := fmt.Sprintf("Successfully update user to %v\n", model.StatusActivity[status])
 
-	utils.MessageSuccessText(w, http.StatusOK, msg)
+	model.MessageSuccessText(w, http.StatusOK, msg)
 }

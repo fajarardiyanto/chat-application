@@ -20,7 +20,7 @@ func NewChatHandler(repo repo.ChatRepository) *ChatHandler {
 func (s *ChatHandler) CreateMessageHandler(w http.ResponseWriter, r *http.Request) {
 	u := &model.MessageRequest{}
 	if err := json.NewDecoder(r.Body).Decode(u); err != nil {
-		utils.MessageError(w, http.StatusBadRequest, "error decoding request object")
+		model.MessageError(w, http.StatusBadRequest, "error decoding request object")
 		return
 	}
 
@@ -31,13 +31,13 @@ func (s *ChatHandler) CreateMessageHandler(w http.ResponseWriter, r *http.Reques
 
 	chat, err := s.repo.CreateChat(req)
 	if err != nil {
-		utils.MessageError(w, http.StatusInternalServerError, err.Error())
+		model.MessageError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	utils.OnMsg(config.GetConfig().Message, chat)
 
-	utils.MessageSuccess(w, http.StatusOK, chat)
+	model.MessageSuccess(w, http.StatusOK, chat)
 }
 
 func (s *ChatHandler) ChatHistoryHandler(w http.ResponseWriter, r *http.Request) {
@@ -46,21 +46,21 @@ func (s *ChatHandler) ChatHistoryHandler(w http.ResponseWriter, r *http.Request)
 
 	chats, err := s.repo.GetChat(from, to)
 	if err != nil {
-		utils.MessageError(w, http.StatusInternalServerError, err.Error())
+		model.MessageError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	utils.MessageSuccess(w, http.StatusOK, chats)
+	model.MessageSuccess(w, http.StatusOK, chats)
 }
 
 func (s *ChatHandler) SaveFileChat(w http.ResponseWriter, r *http.Request) {
 	file, err := s.repo.SaveFileChat(r)
 	if err != nil {
-		utils.MessageError(w, http.StatusInternalServerError, err.Error())
+		model.MessageError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	utils.MessageSuccess(w, http.StatusOK, file)
+	model.MessageSuccess(w, http.StatusOK, file)
 }
 
 func (s *ChatHandler) StaticFile(w http.ResponseWriter, r *http.Request) {

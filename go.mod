@@ -5,6 +5,7 @@ go 1.17
 replace github.com/fajarardiyanto/flt-go-database => ../../module/flt-go-database
 
 require (
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/fajarardiyanto/flt-go-database v0.1.5
 	github.com/fajarardiyanto/flt-go-logger v0.0.8
 	github.com/fajarardiyanto/flt-go-utils v0.1.0

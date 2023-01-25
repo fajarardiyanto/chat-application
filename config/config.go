@@ -16,11 +16,12 @@ var (
 )
 
 type Config struct {
-	Version  string `yaml:"version" default:"v1.0.0"`
-	Name     string `yaml:"name" default:"App Name"`
-	Port     string `yaml:"port" default:"8080"`
-	Message  string `yaml:"message" default:"CHAT_MESSAGE"`
-	Database struct {
+	Version   string `yaml:"version" default:"v1.0.0"`
+	Name      string `yaml:"name" default:"App Name"`
+	Port      string `yaml:"port" default:"8080"`
+	Message   string `yaml:"message" default:"CHAT_MESSAGE"`
+	ApiSecret string `yaml:"api_secret" default:"SECRET"`
+	Database  struct {
 		SQL      databaseInterfaces.SQLConfig              `yaml:"sql"`
 		RabbitMQ databaseInterfaces.RabbitMQProviderConfig `yaml:"rabbitmq"`
 	} `yaml:"database"`

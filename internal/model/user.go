@@ -18,6 +18,17 @@ type UserReqModel struct {
 	UserType int32  `json:"user_type"`
 }
 
+type UserTokenModel struct {
+	ID       string
+	Username string
+	UserType int32
+}
+
+type UserResponseModel struct {
+	User  UserModel `json:"user"`
+	Token string    `json:"token"`
+}
+
 func (*UserModel) TableName() string {
 	return "user"
 }

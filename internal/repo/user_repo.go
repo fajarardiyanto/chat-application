@@ -3,7 +3,7 @@ package repo
 import "github.com/fajarardiyanto/chat-application/internal/model"
 
 type UserRepository interface {
-	UserExist(username string) error
+	UserExist(username string) (*model.UserModel, error)
 	Register(req model.UserModel) (*model.UserModel, error)
 	GetUser() ([]model.UserModel, error)
 	UpdateStatus(id string, status bool) error

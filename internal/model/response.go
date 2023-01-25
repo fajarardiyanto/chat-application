@@ -1,15 +1,14 @@
-package utils
+package model
 
 import (
 	"encoding/json"
 	"github.com/fajarardiyanto/chat-application/config"
-	"github.com/fajarardiyanto/chat-application/internal/model"
 	"net/http"
 )
 
 func MessageSuccess(w http.ResponseWriter, status int, data interface{}) {
 	w.WriteHeader(status)
-	res := &model.Response{
+	res := &Response{
 		Status: true,
 		Data:   data,
 	}
@@ -22,7 +21,7 @@ func MessageSuccess(w http.ResponseWriter, status int, data interface{}) {
 
 func MessageSuccessText(w http.ResponseWriter, status int, msg string) {
 	w.WriteHeader(status)
-	res := &model.Response{
+	res := &Response{
 		Status:  true,
 		Message: msg,
 	}
@@ -35,7 +34,7 @@ func MessageSuccessText(w http.ResponseWriter, status int, msg string) {
 
 func MessageError(w http.ResponseWriter, status int, msg string) {
 	w.WriteHeader(status)
-	res := &model.Response{
+	res := &Response{
 		Status:  false,
 		Message: msg,
 	}

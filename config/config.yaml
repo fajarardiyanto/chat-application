@@ -1,7 +1,8 @@
 version: v1.0.0
-name: App Name
+name: Chat Application
 port: 8082
 message: CHAT_MESSAGE
+api_secret: SECRET
 database:
     sql:
         enable: true
