@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/fajarardiyanto/chat-application/config"
@@ -53,7 +54,7 @@ func ExtractToken(r *http.Request) string {
 	return ""
 }
 
-func ExtractTokenID(r *http.Request) (string, error) {
+func ExtractTokenID(r *http.Request) (*model.UserTokenModel, error) {
 	tokenString := ExtractToken(r)
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -62,11 +63,25 @@ func ExtractTokenID(r *http.Request) (string, error) {
 		return []byte(config.GetConfig().ApiSecret), nil
 	})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
+
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if ok && token.Valid {
-		return claims["user_id"].(string), nil
+		var user model.UserTokenModel
+
+		userMarshal, err := json.Marshal(claims["user"].(map[string]interface{}))
+		if err != nil {
+			config.GetLogger().Error(err)
+			return nil, err
+		}
+
+		if err = json.Unmarshal(userMarshal, &user); err != nil {
+			config.GetLogger().Error(err)
+			return nil, err
+		}
+
+		return &user, nil
 	}
-	return "", nil
+	return nil, nil
 }
