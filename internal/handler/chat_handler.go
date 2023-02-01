@@ -28,6 +28,7 @@ func (s *ChatHandler) CreateMessageHandler(w http.ResponseWriter, r *http.Reques
 	token, err := auth.ExtractTokenID(r)
 	if err != nil {
 		config.GetLogger().Error(err)
+		model.MessageError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -54,6 +55,7 @@ func (s *ChatHandler) ChatHistoryHandler(w http.ResponseWriter, r *http.Request)
 	token, err := auth.ExtractTokenID(r)
 	if err != nil {
 		config.GetLogger().Error(err)
+		model.MessageError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 

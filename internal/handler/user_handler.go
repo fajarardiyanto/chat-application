@@ -92,7 +92,12 @@ func (s *UserHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *UserHandler) ContactListHandler(w http.ResponseWriter, r *http.Request) {
-	username := utils.QueryString(r, "username")
+	token, err := auth.ExtractTokenID(r)
+	if err != nil {
+		config.GetLogger().Error(err)
+		model.MessageError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 
 	res, err := s.repo.GetUser()
 	if err != nil {
@@ -109,7 +114,7 @@ func (s *UserHandler) ContactListHandler(w http.ResponseWriter, r *http.Request)
 		go func(wg *sync.WaitGroup, v model.UserModel) {
 			defer wg.Done()
 
-			if v.Username != username {
+			if v.ID != token.ID {
 				s.Lock()
 				data = append(data, v)
 				s.Unlock()
@@ -122,18 +127,23 @@ func (s *UserHandler) ContactListHandler(w http.ResponseWriter, r *http.Request)
 }
 
 func (s *UserHandler) UpdateStatusHandler(w http.ResponseWriter, r *http.Request) {
-	id := utils.QueryString(r, "id")
+	token, err := auth.ExtractTokenID(r)
+	if err != nil {
+		config.GetLogger().Error(err)
+		model.MessageError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 
 	var status bool = false
 
-	userLife := s.repo.CheckUserLife(id)
+	userLife := s.repo.CheckUserLife(token.ID)
 	if !userLife {
 		s.Lock()
 		status = true
 		s.Unlock()
 	}
 
-	if err := s.repo.UpdateStatus(id, status); err != nil {
+	if err = s.repo.UpdateStatus(token.ID, status); err != nil {
 		model.MessageError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
