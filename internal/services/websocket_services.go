@@ -93,24 +93,34 @@ func (s *wsHandler) OnMsg() {
 				var msg model.Chat
 				if err := m.Decode(&msg); err == nil {
 					config.GetLogger().Info("Message Receive %v", msg)
+
+					var wg sync.WaitGroup
+
+					wg.Add(1)
 					for client := range clients {
-						message := model.Message{
-							Type: "MESSAGE_TEXT",
-							Chat: msg,
-						}
-						if client.Username == msg.From || client.Username == msg.To {
-							if err = client.Conn.WriteJSON(message); err != nil {
-								config.GetLogger().Error("%s is offline", client.Username)
-								if err = client.Conn.Close(); err != nil {
-									config.GetLogger().Error(err.Error())
-									return
-								}
-								s.Lock()
-								delete(clients, client)
-								s.Unlock()
+						go func(wg *sync.WaitGroup, client *Client) {
+							defer wg.Done()
+
+							message := model.Message{
+								Type: "MESSAGE_TEXT",
+								Chat: msg,
 							}
-						}
+							if client.Username == msg.From || client.Username == msg.To {
+								if err = client.Conn.WriteJSON(message); err != nil {
+									config.GetLogger().Error("%s is offline", client.Username)
+									if err = client.Conn.Close(); err != nil {
+										config.GetLogger().Error(err.Error())
+										return
+									}
+
+									s.Lock()
+									delete(clients, client)
+									s.Unlock()
+								}
+							}
+						}(&wg, client)
 					}
+					wg.Wait()
 				}
 			})
 	}()

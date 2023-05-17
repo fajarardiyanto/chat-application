@@ -2,6 +2,10 @@ package api
 
 import (
 	"fmt"
+	"net/http"
+	"os"
+	"os/signal"
+
 	"github.com/fajarardiyanto/chat-application/config"
 	"github.com/fajarardiyanto/chat-application/internal/handler"
 	"github.com/fajarardiyanto/chat-application/internal/middleware"
@@ -10,9 +14,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 	"github.com/spf13/cobra"
-	"net/http"
-	"os"
-	"os/signal"
 )
 
 var CmdAPI = &cobra.Command{
