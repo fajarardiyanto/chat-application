@@ -1,4 +1,4 @@
-package handler
+package controller
 
 import (
 	"encoding/json"
@@ -35,7 +35,7 @@ func (s *ChatHandler) CreateMessageHandler(w http.ResponseWriter, r *http.Reques
 	req := model.Chat{
 		Msg:  u.Message,
 		To:   u.To,
-		From: token.ID,
+		From: token.UserId,
 	}
 
 	chat, err := s.repo.CreateChat(req)
@@ -59,30 +59,11 @@ func (s *ChatHandler) ChatHistoryHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	chats, err := s.repo.GetChat(token.ID, to)
+	chats, err := s.repo.GetChat(token.UserId, to)
 	if err != nil {
 		model.MessageError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	model.MessageSuccess(w, http.StatusOK, chats)
-}
-
-func (s *ChatHandler) SaveFileChat(w http.ResponseWriter, r *http.Request) {
-	file, err := s.repo.SaveFileChat(r)
-	if err != nil {
-		model.MessageError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	model.MessageSuccess(w, http.StatusOK, file)
-}
-
-func (s *ChatHandler) StaticFile(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "image/jpeg")
-
-	file := r.URL.Query().Get("file")
-
-	url := "external/files/" + file
-	http.ServeFile(w, r, url)
 }

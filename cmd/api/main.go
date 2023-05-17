@@ -2,12 +2,12 @@ package api
 
 import (
 	"fmt"
+	"github.com/fajarardiyanto/chat-application/routes"
 	"net/http"
 	"os"
 	"os/signal"
 
 	"github.com/fajarardiyanto/chat-application/config"
-	"github.com/fajarardiyanto/chat-application/internal/handler"
 	"github.com/fajarardiyanto/chat-application/internal/middleware"
 	"github.com/fajarardiyanto/chat-application/internal/model"
 	"github.com/fajarardiyanto/chat-application/internal/services"
@@ -25,12 +25,7 @@ var CmdAPI = &cobra.Command{
 func Api(cmd *cobra.Command, args []string) error {
 	config.Database(config.GetConfig().Database.SQL)
 
-	userSvc := services.NewUserService()
-	chatSvc := services.NewChatService()
 	wsHandler := services.NewWSHandler()
-
-	userHandler := handler.NewUserHandler(userSvc)
-	chatHandler := handler.NewChatHandler(chatSvc)
 
 	r := mux.NewRouter()
 	r.Use(middleware.SetMiddlewareJSON)
@@ -38,19 +33,11 @@ func Api(cmd *cobra.Command, args []string) error {
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		model.MessageSuccess(w, http.StatusOK, "OK")
 	}).Methods(http.MethodGet)
-	r.HandleFunc("/register", userHandler.RegisterHandler).Methods(http.MethodPost)
-	r.HandleFunc("/login", userHandler.LoginHandler).Methods(http.MethodPost)
+
+	routes.AgentRoute(r)
 
 	secure := r.PathPrefix("/auth").Subrouter()
 	secure.Use(middleware.AuthMiddleware)
-
-	secure.HandleFunc("/contact-list", userHandler.ContactListHandler).Methods(http.MethodGet)
-	secure.HandleFunc("/update/status", userHandler.UpdateStatusHandler).Methods(http.MethodPost)
-
-	secure.HandleFunc("/create-chat", chatHandler.CreateMessageHandler).Methods(http.MethodPost)
-	secure.HandleFunc("/chat-history", chatHandler.ChatHistoryHandler).Methods(http.MethodGet)
-	secure.HandleFunc("/files", chatHandler.SaveFileChat).Methods(http.MethodPost)
-	secure.HandleFunc("/static", chatHandler.StaticFile).Methods(http.MethodGet)
 
 	go wsHandler.BroadcastWebSocket()
 	secure.HandleFunc("/ws", wsHandler.ServeWs)

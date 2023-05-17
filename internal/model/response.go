@@ -6,27 +6,15 @@ import (
 	"net/http"
 )
 
-func MessageSuccess(w http.ResponseWriter, status int, data interface{}) {
-	w.WriteHeader(status)
-	res := &Response{
-		Status: true,
-		Data:   data,
-	}
-
-	if err := json.NewEncoder(w).Encode(res); err != nil {
-		config.GetLogger().Error(err)
-		return
-	}
+type Exception struct {
+	Status  int    `json:"status"`
+	Message string `json:"message"`
 }
 
-func MessageSuccessText(w http.ResponseWriter, status int, msg string) {
+func MessageSuccess(w http.ResponseWriter, status int, data interface{}) {
 	w.WriteHeader(status)
-	res := &Response{
-		Status:  true,
-		Message: msg,
-	}
 
-	if err := json.NewEncoder(w).Encode(res); err != nil {
+	if err := json.NewEncoder(w).Encode(data); err != nil {
 		config.GetLogger().Error(err)
 		return
 	}
@@ -34,8 +22,8 @@ func MessageSuccessText(w http.ResponseWriter, status int, msg string) {
 
 func MessageError(w http.ResponseWriter, status int, msg string) {
 	w.WriteHeader(status)
-	res := &Response{
-		Status:  false,
+	res := &Exception{
+		Status:  status,
 		Message: msg,
 	}
 

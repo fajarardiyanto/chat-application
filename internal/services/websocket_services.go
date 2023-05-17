@@ -2,13 +2,14 @@ package services
 
 import (
 	"encoding/json"
+	"net/http"
+	"sync"
+
 	"github.com/fajarardiyanto/chat-application/config"
 	"github.com/fajarardiyanto/chat-application/internal/model"
 	"github.com/fajarardiyanto/chat-application/pkg/auth"
 	"github.com/fajarardiyanto/flt-go-database/interfaces"
 	"github.com/gorilla/websocket"
-	"net/http"
-	"sync"
 )
 
 var clients = make(map[*Client]bool)
@@ -52,9 +53,9 @@ func (s *wsHandler) ServeWs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.Lock()
-	client.Username = token.ID
+	client.Username = token.UserId
 	s.Unlock()
-	config.GetLogger().Info("%s is connected", token.Username)
+	config.GetLogger().Info("%s is connected", token.UserId)
 
 	s.Receiver(client)
 

@@ -11,13 +11,14 @@ import (
 	"time"
 )
 
-func CreateToken(user model.UserTokenModel) (string, error) {
+func CreateToken(user model.TokenModel) (string, error) {
 	claims := jwt.MapClaims{}
 	claims["authorized"] = true
-	claims["user"] = model.UserTokenModel{
-		ID:       user.ID,
-		Username: user.Username,
-		UserType: user.UserType,
+	claims["payload"] = model.TokenModel{
+		UserId:    user.UserId,
+		AccountId: user.AccountId,
+		Role:      user.Role,
+		SessionId: user.SessionId,
 	}
 	claims["exp"] = time.Now().Add(time.Hour * 20).Unix()
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -54,7 +55,7 @@ func ExtractToken(r *http.Request) string {
 	return ""
 }
 
-func ExtractTokenID(r *http.Request) (*model.UserTokenModel, error) {
+func ExtractTokenID(r *http.Request) (*model.TokenModel, error) {
 	tokenString := ExtractToken(r)
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -68,9 +69,9 @@ func ExtractTokenID(r *http.Request) (*model.UserTokenModel, error) {
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if ok && token.Valid {
-		var user model.UserTokenModel
+		var user model.TokenModel
 
-		userMarshal, err := json.Marshal(claims["user"].(map[string]interface{}))
+		userMarshal, err := json.Marshal(claims["payload"].(map[string]interface{}))
 		if err != nil {
 			config.GetLogger().Error(err)
 			return nil, err
