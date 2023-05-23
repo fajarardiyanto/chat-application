@@ -3,12 +3,12 @@ package services
 import (
 	"github.com/fajarardiyanto/chat-application/config"
 	"github.com/fajarardiyanto/chat-application/internal/model"
-	"github.com/fajarardiyanto/chat-application/internal/repo"
+	"github.com/fajarardiyanto/chat-application/internal/repository"
 )
 
 type AccountService struct{}
 
-func NewAccountService() repo.AccountRepository {
+func NewAccountService() repository.AccountRepository {
 	return &AccountService{}
 }
 

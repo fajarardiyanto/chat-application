@@ -12,7 +12,7 @@ type AgentProfile struct {
 	Role       int32  `json:"role" gorm:"column:role"`
 	Manager    string `json:"manager" gorm:"column:manager"`
 	Photo      string `json:"photo" gorm:"column:photo"`
-	Deleted    string `json:"deleted" gorm:"column:deleted;default:false"`
+	Deleted    bool   `json:"deleted" gorm:"column:deleted;default:false"`
 	Audit
 }
 

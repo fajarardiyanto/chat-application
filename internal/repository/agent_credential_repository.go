@@ -1,4 +1,4 @@
-package repo
+package repository
 
 import (
 	"github.com/fajarardiyanto/chat-application/internal/controller/dto/request"

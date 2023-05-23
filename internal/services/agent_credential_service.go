@@ -4,13 +4,13 @@ import (
 	"github.com/fajarardiyanto/chat-application/config"
 	"github.com/fajarardiyanto/chat-application/internal/controller/dto/request"
 	"github.com/fajarardiyanto/chat-application/internal/model"
-	"github.com/fajarardiyanto/chat-application/internal/repo"
+	"github.com/fajarardiyanto/chat-application/internal/repository"
 	"github.com/fajarardiyanto/chat-application/pkg/utils"
 )
 
 type AgentCredentialService struct{}
 
-func NewAgentCredentialService() repo.AgentCredentialRepository {
+func NewAgentCredentialService() repository.AgentCredentialRepository {
 	return &AgentCredentialService{}
 }
 

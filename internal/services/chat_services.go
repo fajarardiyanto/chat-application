@@ -3,14 +3,14 @@ package services
 import (
 	"github.com/fajarardiyanto/chat-application/config"
 	"github.com/fajarardiyanto/chat-application/internal/model"
-	"github.com/fajarardiyanto/chat-application/internal/repo"
+	"github.com/fajarardiyanto/chat-application/internal/repository"
 	"github.com/google/uuid"
 	"time"
 )
 
 type ChatService struct{}
 
-func NewChatService() repo.ChatRepository {
+func NewChatService() repository.ChatRepository {
 	return &ChatService{}
 }
 

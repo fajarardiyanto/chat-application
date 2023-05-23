@@ -22,4 +22,8 @@ func AgentRoute(r *mux.Router) {
 	agentProfileSecure := r.PathPrefix("/v1").Subrouter()
 	agentProfileSecure.Use(middleware.AuthMiddleware)
 	agentProfileSecure.HandleFunc("/agent/password", agentProfileController.SetPassword).Methods(http.MethodPost)
+	agentProfileSecure.HandleFunc("/agent", agentProfileController.GetAgent).Methods(http.MethodGet)
+	agentProfileSecure.HandleFunc("/agent/account/{accountId}/agents", agentProfileController.GetAllAgentByAccountId).Methods(http.MethodGet)
+	agentProfileSecure.HandleFunc("/agent/{agentId}", agentProfileController.UpdateAgentProfileById).Methods(http.MethodPut)
+	agentProfileSecure.HandleFunc("/agent/{agentId}", agentProfileController.DeleteAgentProfileById).Methods(http.MethodDelete)
 }

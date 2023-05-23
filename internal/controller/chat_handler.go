@@ -4,17 +4,17 @@ import (
 	"encoding/json"
 	"github.com/fajarardiyanto/chat-application/config"
 	"github.com/fajarardiyanto/chat-application/internal/model"
-	"github.com/fajarardiyanto/chat-application/internal/repo"
+	"github.com/fajarardiyanto/chat-application/internal/repository"
 	"github.com/fajarardiyanto/chat-application/pkg/auth"
 	"github.com/fajarardiyanto/chat-application/pkg/utils"
 	"net/http"
 )
 
 type ChatHandler struct {
-	repo repo.ChatRepository
+	repo repository.ChatRepository
 }
 
-func NewChatHandler(repo repo.ChatRepository) *ChatHandler {
+func NewChatHandler(repo repository.ChatRepository) *ChatHandler {
 	return &ChatHandler{repo: repo}
 }
 
