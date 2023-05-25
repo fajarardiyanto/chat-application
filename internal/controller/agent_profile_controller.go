@@ -289,7 +289,7 @@ func (s *AgentProfileController) UpdateAgentProfileById(w http.ResponseWriter, r
 func (s *AgentProfileController) DeleteAgentProfileById(w http.ResponseWriter, r *http.Request) {
 	agentId := utils.QueryParam(r, "agentId")
 
-	if !commons.IsAllowedToGetAllAgent(r) {
+	if !commons.IsAllowedToDeleteAgent(r) {
 		config.GetLogger().Error(exception.NotAllowedToSetPassword)
 		model.MessageError(w, http.StatusUnauthorized, exception.NotAllowedToSetPassword)
 		return

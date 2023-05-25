@@ -20,7 +20,7 @@ func CreateToken(user model.TokenModel) (string, error) {
 		Role:      user.Role,
 		SessionId: user.SessionId,
 	}
-	claims["exp"] = time.Now().Add(time.Hour * 20).Unix()
+	claims["exp"] = time.Now().Add(time.Hour * 24).Unix()
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	return token.SignedString([]byte(config.GetConfig().ApiSecret))

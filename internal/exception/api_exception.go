@@ -12,4 +12,6 @@ const (
 	InvalidUsernamePassword = "invalid username/password"
 	InvalidToken            = "invalid token"
 	NotAllowed              = "you are not allowed!"
+	NotAllowedToChat        = "this role is not in allowed list to chat with customer"
+	ConversationNotFound    = "conversation not found"
 )

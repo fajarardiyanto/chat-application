@@ -10,7 +10,6 @@ import (
 	"github.com/fajarardiyanto/chat-application/config"
 	"github.com/fajarardiyanto/chat-application/internal/middleware"
 	"github.com/fajarardiyanto/chat-application/internal/model"
-	"github.com/fajarardiyanto/chat-application/internal/services"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 	"github.com/spf13/cobra"
@@ -25,8 +24,6 @@ var CmdAPI = &cobra.Command{
 func Api(cmd *cobra.Command, args []string) error {
 	config.Database(config.GetConfig().Database.SQL)
 
-	wsHandler := services.NewWSHandler()
-
 	r := mux.NewRouter()
 	r.Use(middleware.SetMiddlewareJSON)
 
@@ -34,13 +31,11 @@ func Api(cmd *cobra.Command, args []string) error {
 		model.MessageSuccess(w, http.StatusOK, "OK")
 	}).Methods(http.MethodGet)
 
-	routes.AgentRoute(r)
-
-	secure := r.PathPrefix("/auth").Subrouter()
-	secure.Use(middleware.AuthMiddleware)
-
-	go wsHandler.BroadcastWebSocket()
-	secure.HandleFunc("/ws", wsHandler.ServeWs)
+	{
+		routes.AgentRoute(r)
+		routes.WsRoute(r)
+		routes.ChatRoute(r)
+	}
 
 	go func() {
 		port := fmt.Sprintf(":%s", config.GetConfig().Port)

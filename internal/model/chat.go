@@ -17,32 +17,3 @@ type Chat struct {
 func (*Chat) TableName() string {
 	return "chat"
 }
-
-type Message struct {
-	Type string `json:"type"`
-	User string `json:"user,omitempty"`
-	Chat Chat   `json:"chat,omitempty"`
-}
-
-type MessageRequest struct {
-	To      string `json:"to"`
-	Message string `json:"message"`
-}
-
-type Document struct {
-	ID      string `json:"_id"`
-	Payload []byte `json:"payload"`
-	Total   int64  `json:"total"`
-}
-
-type Response struct {
-	Status  bool        `json:"status"`
-	Message string      `json:"message,omitempty"`
-	Data    interface{} `json:"data,omitempty"`
-	Total   int         `json:"total,omitempty"`
-}
-
-type FileModel struct {
-	FileName  string `json:"file_name"`
-	Extension string `json:"extension"`
-}

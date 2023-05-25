@@ -23,6 +23,10 @@ func IsAllowedToDeleteAgent(r *http.Request) bool {
 	return AllowedToPerformAction(r, []int32{int32(constant.SUPERVISOR), int32(constant.ADMIN)})
 }
 
+func IsAllowedToChat(r *http.Request) bool {
+	return AllowedToPerformAction(r, []int32{int32(constant.AGENT)})
+}
+
 func AllowedToPerformAction(r *http.Request, roles []int32) bool {
 	token, err := auth.ExtractTokenID(r)
 	if err != nil {
