@@ -1,7 +1,7 @@
 package mapper
 
 import (
-	"github.com/fajarardiyanto/chat-application/internal/constant"
+	"github.com/fajarardiyanto/chat-application/internal/common/constant"
 	"github.com/fajarardiyanto/chat-application/internal/controller/dto/response"
 	"github.com/fajarardiyanto/chat-application/internal/model"
 )

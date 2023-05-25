@@ -6,7 +6,6 @@ const (
 	SUPERVISOR Role = iota
 	AGENT
 	ADMIN
-	NONE
 )
 
 func AgentRole(s int32) string {
@@ -17,8 +16,6 @@ func AgentRole(s int32) string {
 		return "AGENT"
 	case 2:
 		return "ADMIN"
-	case 3:
-		return "NONE"
 	}
 	return ""
 }

@@ -3,11 +3,11 @@ package controller
 import (
 	"encoding/json"
 	"github.com/fajarardiyanto/chat-application/config"
-	"github.com/fajarardiyanto/chat-application/internal/commons"
-	"github.com/fajarardiyanto/chat-application/internal/constant"
+	"github.com/fajarardiyanto/chat-application/internal/common/constant"
+	"github.com/fajarardiyanto/chat-application/internal/common/exception"
+	"github.com/fajarardiyanto/chat-application/internal/common/mapper"
+	"github.com/fajarardiyanto/chat-application/internal/common/validation"
 	"github.com/fajarardiyanto/chat-application/internal/controller/dto/request"
-	"github.com/fajarardiyanto/chat-application/internal/exception"
-	"github.com/fajarardiyanto/chat-application/internal/mapper"
 	"github.com/fajarardiyanto/chat-application/internal/model"
 	"github.com/fajarardiyanto/chat-application/internal/repository"
 	"github.com/fajarardiyanto/chat-application/pkg/auth"
@@ -35,7 +35,7 @@ func NewChatHandler(
 func (s *ChatHandler) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	conversationId := utils.QueryParam(r, "conversationId")
 
-	if !commons.IsAllowedToChat(r) {
+	if !validation.IsAllowedToChat(r) {
 		config.GetLogger().Error(exception.NotAllowedToSetPassword)
 		model.MessageError(w, http.StatusUnauthorized, exception.NotAllowedToSetPassword)
 		return
@@ -63,7 +63,7 @@ func (s *ChatHandler) SendMessageHandler(w http.ResponseWriter, r *http.Request)
 
 	data := model.Message{
 		Content:        req.Content,
-		MessageType:    constant.MessageType[req.ContentType],
+		MessageType:    constant.MessageType(req.ContentType),
 		SenderId:       token.UserId,
 		CreatedAt:      time.Now(),
 		ConversationId: conversationId,

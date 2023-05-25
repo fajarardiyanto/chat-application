@@ -3,9 +3,9 @@ package services
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/fajarardiyanto/chat-application/internal/commons"
+	"github.com/fajarardiyanto/chat-application/internal/common/exception"
+	"github.com/fajarardiyanto/chat-application/internal/common/validation"
 	"github.com/fajarardiyanto/chat-application/internal/controller/dto/response"
-	"github.com/fajarardiyanto/chat-application/internal/exception"
 	"github.com/fajarardiyanto/chat-application/internal/repository"
 	"net/http"
 	"sync"
@@ -76,7 +76,7 @@ func (s *wsHandler) ServeWsAgent(w http.ResponseWriter, r *http.Request) {
 	s.Unlock()
 	config.GetLogger().Info("%s is connected", token.UserId)
 
-	if !commons.IsAllowedToChat(r) {
+	if !validation.IsAllowedToChat(r) {
 		config.GetLogger().Error(exception.NotAllowedToChat)
 		s.WriteMessage(client, map[string]interface{}{
 			"message": "This User with role " + token.Role + " not allowed to chat with customer",

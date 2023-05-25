@@ -3,11 +3,11 @@ package controller
 import (
 	"encoding/json"
 	"github.com/fajarardiyanto/chat-application/config"
-	"github.com/fajarardiyanto/chat-application/internal/commons"
-	"github.com/fajarardiyanto/chat-application/internal/constant"
+	"github.com/fajarardiyanto/chat-application/internal/common/constant"
+	"github.com/fajarardiyanto/chat-application/internal/common/exception"
+	"github.com/fajarardiyanto/chat-application/internal/common/mapper"
+	"github.com/fajarardiyanto/chat-application/internal/common/validation"
 	"github.com/fajarardiyanto/chat-application/internal/controller/dto/request"
-	"github.com/fajarardiyanto/chat-application/internal/exception"
-	"github.com/fajarardiyanto/chat-application/internal/mapper"
 	"github.com/fajarardiyanto/chat-application/internal/model"
 	"github.com/fajarardiyanto/chat-application/internal/repository"
 	"github.com/fajarardiyanto/chat-application/pkg/auth"
@@ -86,7 +86,7 @@ func (s *AgentProfileController) RegisterHandler(w http.ResponseWriter, r *http.
 func (s *AgentProfileController) SetPassword(w http.ResponseWriter, r *http.Request) {
 	config.GetLogger().Info("starting set password agent")
 
-	if !commons.IsAllowedToSetPassword(r) {
+	if !validation.IsAllowedToSetPassword(r) {
 		config.GetLogger().Error(exception.NotAllowedToSetPassword)
 		model.MessageError(w, http.StatusUnauthorized, exception.NotAllowedToSetPassword)
 		return
@@ -182,7 +182,7 @@ func (s *AgentProfileController) Logout(w http.ResponseWriter, r *http.Request) 
 func (s *AgentProfileController) GetAgent(w http.ResponseWriter, r *http.Request) {
 	agentId := utils.QueryString(r, "agentId")
 
-	if !commons.IsAllowedToGetAgent(r) {
+	if !validation.IsAllowedToGetAgent(r) {
 		config.GetLogger().Error(exception.NotAllowedToSetPassword)
 		model.MessageError(w, http.StatusUnauthorized, exception.NotAllowedToSetPassword)
 		return
@@ -221,7 +221,7 @@ func (s *AgentProfileController) GetAgent(w http.ResponseWriter, r *http.Request
 func (s *AgentProfileController) GetAllAgentByAccountId(w http.ResponseWriter, r *http.Request) {
 	accountId := utils.QueryParam(r, "accountId")
 
-	if !commons.IsAllowedToGetAllAgent(r) {
+	if !validation.IsAllowedToGetAllAgent(r) {
 		config.GetLogger().Error(exception.NotAllowedToSetPassword)
 		model.MessageError(w, http.StatusUnauthorized, exception.NotAllowedToSetPassword)
 		return
@@ -289,7 +289,7 @@ func (s *AgentProfileController) UpdateAgentProfileById(w http.ResponseWriter, r
 func (s *AgentProfileController) DeleteAgentProfileById(w http.ResponseWriter, r *http.Request) {
 	agentId := utils.QueryParam(r, "agentId")
 
-	if !commons.IsAllowedToDeleteAgent(r) {
+	if !validation.IsAllowedToDeleteAgent(r) {
 		config.GetLogger().Error(exception.NotAllowedToSetPassword)
 		model.MessageError(w, http.StatusUnauthorized, exception.NotAllowedToSetPassword)
 		return
