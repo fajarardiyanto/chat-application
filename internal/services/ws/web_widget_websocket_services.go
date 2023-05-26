@@ -1,4 +1,4 @@
-package services
+package ws
 
 import (
 	"encoding/json"
@@ -18,54 +18,47 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var clients = make(map[*Client]bool)
+var webWidgetClients = make(map[*webWidgetClient]bool)
 
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-
-	CheckOrigin: func(r *http.Request) bool { return true },
-}
-
-type Client struct {
+type webWidgetClient struct {
 	Conn           *websocket.Conn
 	Username       string
 	ConversationId string
 }
 
-type wsHandler struct {
+type webWidgetWsHandler struct {
 	sync.Mutex
 	ccAgentRepository      repository.CCAgentRepository
 	conversationRepository repository.ConversationRepository
 	agentProfileRepository repository.AgentProfileRepository
 }
 
-func NewWSHandler(
+func NewWebWidgetWSHandler(
 	ccAgentRepository repository.CCAgentRepository,
 	conversationRepository repository.ConversationRepository,
 	agentProfileRepository repository.AgentProfileRepository,
-) *wsHandler {
-	return &wsHandler{
+) *webWidgetWsHandler {
+	return &webWidgetWsHandler{
 		ccAgentRepository:      ccAgentRepository,
 		conversationRepository: conversationRepository,
 		agentProfileRepository: agentProfileRepository,
 	}
 }
 
-func (s *wsHandler) ServeWsAgent(w http.ResponseWriter, r *http.Request) {
-	ws, err := upgrader.Upgrade(w, r, nil)
+func (s *webWidgetWsHandler) ServeWsAgent(w http.ResponseWriter, r *http.Request) {
+	ws, err := Upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		config.GetLogger().Error(err)
 		return
 	}
 
-	client := &Client{Conn: ws}
+	client := &webWidgetClient{Conn: ws}
 
 	s.Lock()
-	clients[client] = true
+	webWidgetClients[client] = true
 	s.Unlock()
 
-	token, err := auth.ExtractTokenID(r)
+	token, err := auth.ExtractTokenAgent(r)
 	if err != nil {
 		config.GetLogger().Error(err)
 		return
@@ -116,10 +109,10 @@ func (s *wsHandler) ServeWsAgent(w http.ResponseWriter, r *http.Request) {
 	s.Receiver(client)
 
 	config.GetLogger().Error("exiting %s", ws.RemoteAddr().String())
-	delete(clients, client)
+	delete(webWidgetClients, client)
 }
 
-func (s *wsHandler) Receiver(client *Client) {
+func (s *webWidgetWsHandler) Receiver(client *webWidgetClient) {
 	for {
 		_, p, err := client.Conn.ReadMessage()
 		if err != nil {
@@ -135,13 +128,13 @@ func (s *wsHandler) Receiver(client *Client) {
 	}
 }
 
-func (s *wsHandler) BroadcastWebSocket() {
+func (s *webWidgetWsHandler) BroadcastWebSocket() {
 	config.GetLogger().Info("Broadcaster started")
 
 	s.OnMsg()
 }
 
-func (s *wsHandler) OnMsg() {
+func (s *webWidgetWsHandler) OnMsg() {
 	go func() {
 
 		config.GetRabbitMQ().Consumer(interfaces.RabbitMQOptions{
@@ -157,7 +150,7 @@ func (s *wsHandler) OnMsg() {
 						config.GetLogger().Error(err.Error())
 					}
 
-					for client := range clients {
+					for client := range agentClients {
 						message := response.MessageWsResponse{
 							Event: "MESSAGE_CREATED",
 							Conversation: response.ConversationMessageResponse{
@@ -184,7 +177,7 @@ func (s *wsHandler) OnMsg() {
 								}
 
 								s.Lock()
-								delete(clients, client)
+								delete(agentClients, client)
 								s.Unlock()
 							}
 						}
@@ -194,19 +187,19 @@ func (s *wsHandler) OnMsg() {
 	}()
 }
 
-func (s *wsHandler) OnClose(client *Client) {
+func (s *webWidgetWsHandler) OnClose(client *webWidgetClient) {
 	if err := client.Conn.Close(); err != nil {
 		return
 	}
 }
 
-func (s *wsHandler) WriteMessage(client *Client, msg interface{}) {
+func (s *webWidgetWsHandler) WriteMessage(client *webWidgetClient, msg interface{}) {
 	if err := client.Conn.WriteJSON(msg); err != nil {
 		return
 	}
 }
 
-func (s *wsHandler) Ping(client *Client) {
+func (s *webWidgetWsHandler) Ping(client *webWidgetClient) {
 	defer func() {
 		time.Sleep(20 * time.Second)
 		go s.Ping(client)

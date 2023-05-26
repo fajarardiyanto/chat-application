@@ -12,7 +12,7 @@ func NewMessageService() repository.MessageRepository {
 	return &MessageService{}
 }
 
-func (m MessageService) CreateMessage(message model.Message) error {
+func (*MessageService) CreateMessage(message model.Message) error {
 	if err := config.GetDB().Orm().Debug().Model(&model.Message{}).Create(&message).Error; err != nil {
 		return err
 	}

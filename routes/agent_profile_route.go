@@ -2,8 +2,8 @@ package routes
 
 import (
 	"github.com/fajarardiyanto/chat-application/internal/controller"
-	"github.com/fajarardiyanto/chat-application/internal/middleware"
 	"github.com/fajarardiyanto/chat-application/internal/services"
+	"github.com/fajarardiyanto/chat-application/middleware"
 	"github.com/gorilla/mux"
 	"net/http"
 )

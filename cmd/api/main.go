@@ -2,13 +2,13 @@ package api
 
 import (
 	"fmt"
+	"github.com/fajarardiyanto/chat-application/middleware"
 	"github.com/fajarardiyanto/chat-application/routes"
 	"net/http"
 	"os"
 	"os/signal"
 
 	"github.com/fajarardiyanto/chat-application/config"
-	"github.com/fajarardiyanto/chat-application/internal/middleware"
 	"github.com/fajarardiyanto/chat-application/internal/model"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
@@ -33,8 +33,10 @@ func Api(cmd *cobra.Command, args []string) error {
 
 	{
 		routes.AgentRoute(r)
+		routes.MessageRoute(r)
+		routes.ContactRoute(r)
+
 		routes.WsRoute(r)
-		routes.ChatRoute(r)
 	}
 
 	go func() {

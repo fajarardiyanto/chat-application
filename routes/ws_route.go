@@ -1,8 +1,9 @@
 package routes
 
 import (
-	"github.com/fajarardiyanto/chat-application/internal/middleware"
 	"github.com/fajarardiyanto/chat-application/internal/services"
+	"github.com/fajarardiyanto/chat-application/internal/services/ws"
+	"github.com/fajarardiyanto/chat-application/middleware"
 	"github.com/gorilla/mux"
 )
 
@@ -11,7 +12,7 @@ func WsRoute(r *mux.Router) {
 	conversationService := services.NewConversationService()
 	agentProfileService := services.NewAgentProfileService()
 
-	wsHandler := services.NewWSHandler(ccAgentService, conversationService, agentProfileService)
+	wsHandler := ws.NewWSHandler(ccAgentService, conversationService, agentProfileService)
 
 	secure := r.PathPrefix("/ws").Subrouter()
 	secure.Use(middleware.AuthMiddleware)

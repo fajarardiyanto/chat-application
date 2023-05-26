@@ -2,10 +2,7 @@ module github.com/fajarardiyanto/chat-application
 
 go 1.17
 
-replace (
-	github.com/fajarardiyanto/flt-go-database => ../../module/flt-go-database
-	github.com/fajardiyanto/module-proto => ../../chat-application/module-proto
-)
+replace github.com/fajarardiyanto/flt-go-database => ../../module/flt-go-database
 
 require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible

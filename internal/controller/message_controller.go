@@ -17,23 +17,40 @@ import (
 	"time"
 )
 
-type ChatHandler struct {
+type MessageController struct {
 	conversationRepository repository.ConversationRepository
 	messageRepository      repository.MessageRepository
+	accountRepository      repository.AccountRepository
 }
 
 func NewChatHandler(
 	conversationRepository repository.ConversationRepository,
 	messageRepository repository.MessageRepository,
-) *ChatHandler {
-	return &ChatHandler{
+	accountRepository repository.AccountRepository,
+) *MessageController {
+	return &MessageController{
 		conversationRepository: conversationRepository,
 		messageRepository:      messageRepository,
+		accountRepository:      accountRepository,
 	}
 }
 
-func (s *ChatHandler) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
+func (s *MessageController) AgentSendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	conversationId := utils.QueryParam(r, "conversationId")
+	accountId := utils.QueryParam(r, "accountId")
+
+	req := &request.MessageRequest{}
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		config.GetLogger().Error(err)
+		model.MessageError(w, http.StatusBadRequest, exception.ErrorDecodeRequest)
+		return
+	}
+
+	if _, err := s.accountRepository.FindAccountByAccountId(accountId); err != nil {
+		config.GetLogger().Error(exception.AccountNotFound)
+		model.MessageError(w, http.StatusNotFound, exception.AccountNotFound)
+		return
+	}
 
 	if !validation.IsAllowedToChat(r) {
 		config.GetLogger().Error(exception.NotAllowedToSetPassword)
@@ -41,14 +58,7 @@ func (s *ChatHandler) SendMessageHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	req := &request.MessageRequest{}
-	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
-		config.GetLogger().Error(err)
-		model.MessageError(w, http.StatusBadRequest, "error decoding request object")
-		return
-	}
-
-	token, err := auth.ExtractTokenID(r)
+	token, err := auth.ExtractTokenAgent(r)
 	if err != nil {
 		config.GetLogger().Error(err)
 		model.MessageError(w, http.StatusInternalServerError, err.Error())

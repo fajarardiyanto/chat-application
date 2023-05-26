@@ -28,7 +28,7 @@ func IsAllowedToChat(r *http.Request) bool {
 }
 
 func AllowedToPerformAction(r *http.Request, roles []constant.Role) bool {
-	token, err := auth.ExtractTokenID(r)
+	token, err := auth.ExtractTokenAgent(r)
 	if err != nil {
 		config.GetLogger().Error(err)
 		return false

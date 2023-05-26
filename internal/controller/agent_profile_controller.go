@@ -145,14 +145,14 @@ func (s *AgentProfileController) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	identity := model.TokenModel{
+	identity := model.AgentTokenModel{
 		UserId:    agentProfile.Uuid,
 		AccountId: agentProfile.AccountId,
 		Role:      constant.AgentRole(agentProfile.Role),
 		SessionId: uuid.NewString(),
 	}
 
-	token, err := auth.CreateToken(identity)
+	token, err := auth.CreateTokenAgent(identity)
 	if err != nil {
 		config.GetLogger().Error(err)
 		model.MessageError(w, http.StatusInternalServerError, err.Error())
@@ -163,7 +163,7 @@ func (s *AgentProfileController) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *AgentProfileController) Logout(w http.ResponseWriter, r *http.Request) {
-	token, err := auth.ExtractTokenID(r)
+	token, err := auth.ExtractTokenAgent(r)
 	if err != nil {
 		config.GetLogger().Error(err)
 		model.MessageError(w, http.StatusBadRequest, exception.InvalidToken)
@@ -188,7 +188,7 @@ func (s *AgentProfileController) GetAgent(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	token, err := auth.ExtractTokenID(r)
+	token, err := auth.ExtractTokenAgent(r)
 	if err != nil {
 		config.GetLogger().Error(err)
 		model.MessageError(w, http.StatusBadRequest, exception.InvalidToken)
@@ -227,7 +227,7 @@ func (s *AgentProfileController) GetAllAgentByAccountId(w http.ResponseWriter, r
 		return
 	}
 
-	token, err := auth.ExtractTokenID(r)
+	token, err := auth.ExtractTokenAgent(r)
 	if err != nil {
 		config.GetLogger().Error(err)
 		model.MessageError(w, http.StatusBadRequest, exception.InvalidToken)
@@ -260,7 +260,7 @@ func (s *AgentProfileController) UpdateAgentProfileById(w http.ResponseWriter, r
 		return
 	}
 
-	token, err := auth.ExtractTokenID(r)
+	token, err := auth.ExtractTokenAgent(r)
 	if err != nil {
 		config.GetLogger().Error(err)
 		model.MessageError(w, http.StatusBadRequest, exception.InvalidToken)
