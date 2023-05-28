@@ -17,4 +17,6 @@ const (
 	WebsiteTokenNotFound     = "website token not found"
 	ChannelWithInboxNotFound = "channel with channel id not found"
 	SomethingWentWrong       = "something went wrong"
+	WebsiteTokenMissing      = "websiteToken missing"
+	ConversationClosed       = "Conversation is already closed"
 )

@@ -33,7 +33,7 @@ type agentWsHandler struct {
 	agentProfileRepository repository.AgentProfileRepository
 }
 
-func NewWSHandler(
+func NewAgentWSHandler(
 	ccAgentRepository repository.CCAgentRepository,
 	conversationRepository repository.ConversationRepository,
 	agentProfileRepository repository.AgentProfileRepository,
@@ -155,8 +155,8 @@ func (s *agentWsHandler) OnMsg() {
 							Event: "MESSAGE_CREATED",
 							Conversation: response.ConversationMessageResponse{
 								Agent: response.UserMessageResponse{
-									Name: msg.SenderId,
-									Id:   fmt.Sprintf("%s %s", agent.FirstName, agent.LastName),
+									Name: fmt.Sprintf("%s %s", agent.FirstName, agent.LastName),
+									Id:   msg.SenderId,
 								},
 								ConversationId: msg.ConversationId,
 							},
@@ -167,7 +167,9 @@ func (s *agentWsHandler) OnMsg() {
 								SenderType: "AGENT",
 							},
 						}
+						config.GetLogger().Info("1 %s 2 %s", client.ConversationId, msg.ConversationId)
 
+						//conversation, err := s.conversationRepository.FindByConversationId(msg.ConversationId)
 						if client.ConversationId == msg.ConversationId && client.Username == msg.SenderId {
 							if err = client.Conn.WriteJSON(message); err != nil {
 								config.GetLogger().Error("%s is offline", client.Username)

@@ -8,15 +8,22 @@ import (
 )
 
 func WsRoute(r *mux.Router) {
-	ccAgentService := services.NewCCAgentService()
+	//ccAgentService := services.NewCCAgentService()
 	conversationService := services.NewConversationService()
-	agentProfileService := services.NewAgentProfileService()
+	//agentProfileService := services.NewAgentProfileService()
+	inboxService := services.NewInboxService()
+	contactInboxService := services.NewContactInboxService()
+	contactService := services.NewContactService()
 
-	wsHandler := ws.NewWSHandler(ccAgentService, conversationService, agentProfileService)
+	//agentWsHandler := ws.NewAgentWSHandler(ccAgentService, conversationService, agentProfileService)
+	contactWsHandler := ws.NewWebWidgetWSHandler(inboxService, contactInboxService, conversationService, contactService)
 
 	secure := r.PathPrefix("/ws").Subrouter()
 	secure.Use(middleware.AuthMiddleware)
 
-	go wsHandler.BroadcastWebSocket()
-	secure.HandleFunc("/cable", wsHandler.ServeWsAgent)
+	//go agentWsHandler.BroadcastWebSocket()
+	//secure.HandleFunc("/cable", agentWsHandler.ServeWsAgent)
+
+	go contactWsHandler.BroadcastWebSocket()
+	secure.HandleFunc("/web-widget/cable", contactWsHandler.ServeWsAgent)
 }

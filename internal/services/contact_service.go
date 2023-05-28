@@ -28,3 +28,12 @@ func (*ContactService) FindByEmailAndAccountUuid(email string, accountId string)
 
 	return &res, nil
 }
+
+func (*ContactService) FindById(id string) (*model.Contact, error) {
+	var res model.Contact
+	if err := config.GetDB().Orm().Debug().Model(&model.Contact{}).Where("uuid = ?", id).First(&res).Error; err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}

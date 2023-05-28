@@ -2,11 +2,12 @@ package ws
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/fajarardiyanto/chat-application/internal/common/exception"
-	"github.com/fajarardiyanto/chat-application/internal/common/validation"
 	"github.com/fajarardiyanto/chat-application/internal/controller/dto/response"
 	"github.com/fajarardiyanto/chat-application/internal/repository"
+	"github.com/fajarardiyanto/chat-application/pkg/utils"
+	"github.com/google/uuid"
+	"log"
 	"net/http"
 	"sync"
 	"time"
@@ -22,26 +23,29 @@ var webWidgetClients = make(map[*webWidgetClient]bool)
 
 type webWidgetClient struct {
 	Conn           *websocket.Conn
-	Username       string
 	ConversationId string
+	InboxId        string
 }
 
 type webWidgetWsHandler struct {
 	sync.Mutex
-	ccAgentRepository      repository.CCAgentRepository
+	inboxRepository        repository.InboxRepository
+	contactInboxRepository repository.ContactInboxRepository
 	conversationRepository repository.ConversationRepository
-	agentProfileRepository repository.AgentProfileRepository
+	contactRepository      repository.ContactRepository
 }
 
 func NewWebWidgetWSHandler(
-	ccAgentRepository repository.CCAgentRepository,
+	inboxRepository repository.InboxRepository,
+	contactInboxRepository repository.ContactInboxRepository,
 	conversationRepository repository.ConversationRepository,
-	agentProfileRepository repository.AgentProfileRepository,
+	contactRepository repository.ContactRepository,
 ) *webWidgetWsHandler {
 	return &webWidgetWsHandler{
-		ccAgentRepository:      ccAgentRepository,
+		inboxRepository:        inboxRepository,
+		contactInboxRepository: contactInboxRepository,
 		conversationRepository: conversationRepository,
-		agentProfileRepository: agentProfileRepository,
+		contactRepository:      contactRepository,
 	}
 }
 
@@ -54,56 +58,86 @@ func (s *webWidgetWsHandler) ServeWsAgent(w http.ResponseWriter, r *http.Request
 
 	client := &webWidgetClient{Conn: ws}
 
+	websiteToken := utils.QueryString(r, "websiteToken")
+	if websiteToken == "" {
+		config.GetLogger().Error(exception.WebsiteTokenMissing)
+		s.WriteMessage(client, map[string]interface{}{
+			"message": exception.WebsiteTokenMissing,
+		})
+		s.OnClose(client)
+		return
+	}
+
 	s.Lock()
 	webWidgetClients[client] = true
 	s.Unlock()
 
-	token, err := auth.ExtractTokenAgent(r)
+	token, err := auth.ExtractTokenContact(r)
 	if err != nil {
 		config.GetLogger().Error(err)
 		return
 	}
 
-	s.Lock()
-	client.Username = token.UserId
-	s.Unlock()
-	config.GetLogger().Info("%s is connected", token.UserId)
-
-	if !validation.IsAllowedToChat(r) {
-		config.GetLogger().Error(exception.NotAllowedToChat)
-		s.WriteMessage(client, map[string]interface{}{
-			"message": "This User with role " + token.Role + " not allowed to chat with customer",
-		})
-		s.OnClose(client)
-		return
-	}
-
-	ccAgent, err := s.ccAgentRepository.FindCCAgentByAgentId(token.UserId)
+	contactInbox, err := s.contactInboxRepository.FindBySourceId(token.SourceId)
 	if err != nil {
-		errMsg := fmt.Sprintf("%s agent not present in chat platform", token.UserId)
-		config.GetLogger().Error(errMsg)
+		config.GetLogger().Error(err.Error())
 		s.WriteMessage(client, map[string]interface{}{
-			"message": errMsg,
+			"message": err.Error(),
 		})
 		s.OnClose(client)
 		return
 	}
 
-	if token.AccountId != ccAgent.AccountId {
-		errMsg := "Looks like agent is not in the same account. Check with your manager"
-		config.GetLogger().Error(errMsg)
+	contact, err := s.contactRepository.FindById(contactInbox.ContactId)
+	if err != nil {
+		config.GetLogger().Error(err.Error())
 		s.WriteMessage(client, map[string]interface{}{
-			"message": errMsg,
+			"message": err.Error(),
 		})
 		s.OnClose(client)
 		return
 	}
 
-	if conversation, err := s.conversationRepository.FindByAgentId(ccAgent.AgentId); err == nil {
-		s.Lock()
-		client.ConversationId = conversation.Uuid
-		s.Unlock()
+	conversationId := uuid.NewString()
+	conversation, err := s.conversationRepository.FindByContactInboxId(contactInbox.Uuid)
+	if err != nil {
+		conversationData := model.Conversation{
+			Uuid:           conversationId,
+			ContactInboxId: contactInbox.Uuid,
+			ContactId:      contactInbox.ContactId,
+			InboxId:        contactInbox.InboxId,
+			Status:         "OPEN",
+			AccountId:      contact.AccountId,
+		}
+
+		if err = s.conversationRepository.CreateConversation(conversationData); err != nil {
+			config.GetLogger().Error(err.Error())
+			s.WriteMessage(client, map[string]interface{}{
+				"message": err.Error(),
+			})
+			s.OnClose(client)
+			return
+		}
+
+		s.WriteMessage(client, map[string]interface{}{
+			"message": conversationData,
+		})
+	} else {
+		if conversation.Status != "OPEN" {
+			config.GetLogger().Error(exception.ConversationClosed)
+			s.WriteMessage(client, map[string]interface{}{
+				"message": exception.ConversationClosed,
+			})
+			s.OnClose(client)
+			return
+		}
+		conversationId = conversation.Uuid
 	}
+
+	s.Lock()
+	client.ConversationId = conversationId
+	s.Unlock()
+	config.GetLogger().Info("%s is connected", conversationId)
 
 	s.Ping(client)
 	s.Receiver(client)
@@ -145,18 +179,18 @@ func (s *webWidgetWsHandler) OnMsg() {
 				if err := m.Decode(&msg); err == nil {
 					config.GetLogger().Info("Message Receive %v", msg)
 
-					agent, err := s.agentProfileRepository.FindAgentProfileById(msg.SenderId)
-					if err != nil {
-						config.GetLogger().Error(err.Error())
-					}
+					//contact, err := s.contactRepository.FindById(msg.SenderId)
+					//if err != nil {
+					//	config.GetLogger().Error(err.Error())
+					//}
 
-					for client := range agentClients {
+					for client := range webWidgetClients {
 						message := response.MessageWsResponse{
 							Event: "MESSAGE_CREATED",
 							Conversation: response.ConversationMessageResponse{
 								Agent: response.UserMessageResponse{
-									Name: msg.SenderId,
-									Id:   fmt.Sprintf("%s %s", agent.FirstName, agent.LastName),
+									Name: "test",
+									Id:   msg.SenderId,
 								},
 								ConversationId: msg.ConversationId,
 							},
@@ -168,16 +202,17 @@ func (s *webWidgetWsHandler) OnMsg() {
 							},
 						}
 
-						if client.ConversationId == msg.ConversationId && client.Username == msg.SenderId {
+						log.Println("HEREEEE CONTACT", client.ConversationId, msg.ConversationId)
+						if client.ConversationId == msg.ConversationId {
 							if err = client.Conn.WriteJSON(message); err != nil {
-								config.GetLogger().Error("%s is offline", client.Username)
+								config.GetLogger().Error("%s is offline", client.InboxId)
 								if err = client.Conn.Close(); err != nil {
 									config.GetLogger().Error(err.Error())
 									return
 								}
 
 								s.Lock()
-								delete(agentClients, client)
+								delete(webWidgetClients, client)
 								s.Unlock()
 							}
 						}
@@ -208,4 +243,8 @@ func (s *webWidgetWsHandler) Ping(client *webWidgetClient) {
 	s.WriteMessage(client, map[string]interface{}{
 		"event": "PING",
 	})
+}
+
+func (s *webWidgetWsHandler) CheckIfOutOfWorkingHours(inboxId string) *response.OperationalHoursResponse {
+	return nil
 }
