@@ -5,9 +5,9 @@ import (
 	"github.com/fajarardiyanto/chat-application/internal/common/exception"
 	"github.com/fajarardiyanto/chat-application/internal/controller/dto/response"
 	"github.com/fajarardiyanto/chat-application/internal/repository"
+	"github.com/fajarardiyanto/chat-application/internal/services/ws/listener"
 	"github.com/fajarardiyanto/chat-application/pkg/utils"
 	"github.com/google/uuid"
-	"log"
 	"net/http"
 	"sync"
 	"time"
@@ -15,17 +15,7 @@ import (
 	"github.com/fajarardiyanto/chat-application/config"
 	"github.com/fajarardiyanto/chat-application/internal/model"
 	"github.com/fajarardiyanto/chat-application/pkg/auth"
-	"github.com/fajarardiyanto/flt-go-database/interfaces"
-	"github.com/gorilla/websocket"
 )
-
-var webWidgetClients = make(map[*webWidgetClient]bool)
-
-type webWidgetClient struct {
-	Conn           *websocket.Conn
-	ConversationId string
-	InboxId        string
-}
 
 type webWidgetWsHandler struct {
 	sync.Mutex
@@ -49,14 +39,14 @@ func NewWebWidgetWSHandler(
 	}
 }
 
-func (s *webWidgetWsHandler) ServeWsAgent(w http.ResponseWriter, r *http.Request) {
+func (s *webWidgetWsHandler) ServeWsWebWidget(w http.ResponseWriter, r *http.Request) {
 	ws, err := Upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		config.GetLogger().Error(err)
 		return
 	}
 
-	client := &webWidgetClient{Conn: ws}
+	client := &listener.WebWidgetClient{Conn: ws}
 
 	websiteToken := utils.QueryString(r, "websiteToken")
 	if websiteToken == "" {
@@ -69,7 +59,7 @@ func (s *webWidgetWsHandler) ServeWsAgent(w http.ResponseWriter, r *http.Request
 	}
 
 	s.Lock()
-	webWidgetClients[client] = true
+	listener.WebWidgetClients[client] = true
 	s.Unlock()
 
 	token, err := auth.ExtractTokenContact(r)
@@ -143,10 +133,10 @@ func (s *webWidgetWsHandler) ServeWsAgent(w http.ResponseWriter, r *http.Request
 	s.Receiver(client)
 
 	config.GetLogger().Error("exiting %s", ws.RemoteAddr().String())
-	delete(webWidgetClients, client)
+	delete(listener.WebWidgetClients, client)
 }
 
-func (s *webWidgetWsHandler) Receiver(client *webWidgetClient) {
+func (s *webWidgetWsHandler) Receiver(client *listener.WebWidgetClient) {
 	for {
 		_, p, err := client.Conn.ReadMessage()
 		if err != nil {
@@ -162,79 +152,19 @@ func (s *webWidgetWsHandler) Receiver(client *webWidgetClient) {
 	}
 }
 
-func (s *webWidgetWsHandler) BroadcastWebSocket() {
-	config.GetLogger().Info("Broadcaster started")
-
-	s.OnMsg()
-}
-
-func (s *webWidgetWsHandler) OnMsg() {
-	go func() {
-
-		config.GetRabbitMQ().Consumer(interfaces.RabbitMQOptions{
-			Exchange: config.GetConfig().Message,
-			NoWait:   true},
-			func(m interfaces.Messages, cid interfaces.ConsumerCallbackIsDone) {
-				var msg model.Message
-				if err := m.Decode(&msg); err == nil {
-					config.GetLogger().Info("Message Receive %v", msg)
-
-					//contact, err := s.contactRepository.FindById(msg.SenderId)
-					//if err != nil {
-					//	config.GetLogger().Error(err.Error())
-					//}
-
-					for client := range webWidgetClients {
-						message := response.MessageWsResponse{
-							Event: "MESSAGE_CREATED",
-							Conversation: response.ConversationMessageResponse{
-								Agent: response.UserMessageResponse{
-									Name: "test",
-									Id:   msg.SenderId,
-								},
-								ConversationId: msg.ConversationId,
-							},
-							Data: response.InfoMessageResponse{
-								MessageId:  msg.Uuid,
-								Content:    msg.Content,
-								Timestamp:  msg.CreatedAt,
-								SenderType: "AGENT",
-							},
-						}
-
-						log.Println("HEREEEE CONTACT", client.ConversationId, msg.ConversationId)
-						if client.ConversationId == msg.ConversationId {
-							if err = client.Conn.WriteJSON(message); err != nil {
-								config.GetLogger().Error("%s is offline", client.InboxId)
-								if err = client.Conn.Close(); err != nil {
-									config.GetLogger().Error(err.Error())
-									return
-								}
-
-								s.Lock()
-								delete(webWidgetClients, client)
-								s.Unlock()
-							}
-						}
-					}
-				}
-			})
-	}()
-}
-
-func (s *webWidgetWsHandler) OnClose(client *webWidgetClient) {
+func (s *webWidgetWsHandler) OnClose(client *listener.WebWidgetClient) {
 	if err := client.Conn.Close(); err != nil {
 		return
 	}
 }
 
-func (s *webWidgetWsHandler) WriteMessage(client *webWidgetClient, msg interface{}) {
+func (s *webWidgetWsHandler) WriteMessage(client *listener.WebWidgetClient, msg interface{}) {
 	if err := client.Conn.WriteJSON(msg); err != nil {
 		return
 	}
 }
 
-func (s *webWidgetWsHandler) Ping(client *webWidgetClient) {
+func (s *webWidgetWsHandler) Ping(client *listener.WebWidgetClient) {
 	defer func() {
 		time.Sleep(20 * time.Second)
 		go s.Ping(client)

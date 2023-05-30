@@ -23,7 +23,7 @@ func (*ConversationService) FindByConversationId(conversationId string) (*model.
 
 func (*ConversationService) FindByAgentId(agentId string) (*model.Conversation, error) {
 	var res model.Conversation
-	if err := config.GetDB().Orm().Debug().Model(&model.Conversation{}).Where("agent_id = ?", agentId).First(&res).Error; err != nil {
+	if err := config.GetDB().Orm().Debug().Model(&model.Conversation{}).Where("agent_id = ?", agentId).Last(&res).Error; err != nil {
 		return nil, err
 	}
 
