@@ -32,7 +32,7 @@ func (*ConversationService) FindByAgentId(agentId string) (*model.Conversation, 
 
 func (*ConversationService) FindByContactInboxId(contactInboxId string) (*model.Conversation, error) {
 	var res model.Conversation
-	if err := config.GetDB().Orm().Debug().Model(&model.Conversation{}).Where("contact_inbox_id = ?", contactInboxId).First(&res).Error; err != nil {
+	if err := config.GetDB().Orm().Debug().Model(&model.Conversation{}).Where("contact_inbox_id = ? AND status = 'OPEN'", contactInboxId).Last(&res).Error; err != nil {
 		return nil, err
 	}
 

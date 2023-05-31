@@ -78,6 +78,7 @@ func (s *MessageController) AgentSendMessageHandler(w http.ResponseWriter, r *ht
 		CreatedAt:      time.Now(),
 		ConversationId: conversationId,
 		Uuid:           uuid.NewString(),
+		SenderType:     1,
 	}
 
 	if len(req.Documents) > 0 {

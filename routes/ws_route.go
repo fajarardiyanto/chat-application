@@ -18,13 +18,12 @@ func WsRoute(r *mux.Router) {
 
 	agentWsHandler := ws.NewWSHandler(ccAgentService, conversationService, agentProfileService)
 	contactWsHandler := ws.NewWebWidgetWSHandler(inboxService, contactInboxService, conversationService, contactService)
-	eventListenerHandler := listener.NewEventListener(agentProfileService)
+	eventListenerHandler := listener.NewEventListener(agentProfileService, contactService)
 
 	secure := r.PathPrefix("/ws").Subrouter()
 	secure.Use(middleware.AuthMiddleware)
 
 	go eventListenerHandler.BroadcastWebSocket()
 	secure.HandleFunc("/cable", agentWsHandler.ServeWsAgent)
-
 	secure.HandleFunc("/web-widget/cable", contactWsHandler.ServeWsWebWidget)
 }

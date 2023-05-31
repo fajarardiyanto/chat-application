@@ -109,8 +109,17 @@ func (s *webWidgetWsHandler) ServeWsWebWidget(w http.ResponseWriter, r *http.Req
 			return
 		}
 
+		greetingMessage := response.GreetingMessageResponse{
+			Conversation: response.ConversationGreetingMessage{
+				ConversationID: conversationId,
+				ContactInboxId: contactInbox.Uuid,
+				ContactId:      contactInbox.ContactId,
+				InboxId:        contactInbox.InboxId,
+			},
+		}
+
 		s.WriteMessage(client, map[string]interface{}{
-			"message": conversationData,
+			"message": greetingMessage,
 		})
 	} else {
 		if conversation.Status != "OPEN" {

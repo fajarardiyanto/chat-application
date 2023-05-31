@@ -8,6 +8,7 @@ import (
 	"github.com/fajarardiyanto/chat-application/internal/repository"
 	"github.com/fajarardiyanto/flt-go-database/interfaces"
 	"github.com/gorilla/websocket"
+	"log"
 	"sync"
 )
 
@@ -29,10 +30,17 @@ type WebWidgetClient struct {
 type EventListener struct {
 	sync.Mutex
 	agentProfileRepository repository.AgentProfileRepository
+	contactRepository      repository.ContactRepository
 }
 
-func NewEventListener(agentProfileRepository repository.AgentProfileRepository) *EventListener {
-	return &EventListener{agentProfileRepository: agentProfileRepository}
+func NewEventListener(
+	agentProfileRepository repository.AgentProfileRepository,
+	contactRepository repository.ContactRepository,
+) *EventListener {
+	return &EventListener{
+		agentProfileRepository: agentProfileRepository,
+		contactRepository:      contactRepository,
+	}
 }
 
 func (s *EventListener) OnMsg() {
@@ -45,28 +53,61 @@ func (s *EventListener) OnMsg() {
 				if err := m.Decode(&msg); err == nil {
 					config.GetLogger().Info("Message Receive %v", msg)
 
-					agent, err := s.agentProfileRepository.FindAgentProfileById(msg.SenderId)
-					if err != nil {
-						config.GetLogger().Error(err.Error())
+					var senderType string
+					agentResponse := new(response.UserMessageResponse)
+					contactResponse := new(response.UserMessageResponse)
+
+					if msg.SenderType == 1 {
+						agent, err := s.agentProfileRepository.FindAgentProfileById(msg.SenderId)
+						if err != nil {
+							config.GetLogger().Error(err.Error())
+						}
+
+						agentResponse = &response.UserMessageResponse{
+							Name: fmt.Sprintf("%s %s", agent.FirstName, agent.LastName),
+							Id:   msg.SenderId,
+						}
+
+						senderType = "AGENT"
+					}
+
+					if msg.SenderType == 0 {
+						contact, err := s.contactRepository.FindById(msg.SenderId)
+						if err != nil {
+							config.GetLogger().Error(err.Error())
+						}
+
+						contactResponse = &response.UserMessageResponse{
+							Name: contact.Name,
+							Id:   msg.SenderId,
+						}
+
+						senderType = "CONTACT"
 					}
 
 					for client := range AgentClients {
 						message := response.MessageWsResponse{
 							Event: "MESSAGE_CREATED",
 							Conversation: response.ConversationMessageResponse{
-								Agent: response.UserMessageResponse{
-									Name: fmt.Sprintf("%s %s", agent.FirstName, agent.LastName),
-									Id:   msg.SenderId,
-								},
 								ConversationId: msg.ConversationId,
 							},
 							Data: response.InfoMessageResponse{
 								MessageId:  msg.Uuid,
 								Content:    msg.Content,
 								Timestamp:  msg.CreatedAt,
-								SenderType: "AGENT",
+								SenderType: senderType,
 							},
 						}
+
+						if agentResponse != nil {
+							message.Conversation.Agent = *agentResponse
+						}
+
+						if contactResponse != nil {
+							message.Conversation.Contact = *contactResponse
+						}
+
+						log.Println(client.ConversationId, "== ", msg.ConversationId)
 
 						if client.ConversationId == msg.ConversationId && client.Username == msg.SenderId {
 							if err = client.Conn.WriteJSON(message); err != nil {
@@ -87,18 +128,22 @@ func (s *EventListener) OnMsg() {
 						message := response.MessageWsResponse{
 							Event: "MESSAGE_CREATED",
 							Conversation: response.ConversationMessageResponse{
-								Agent: response.UserMessageResponse{
-									Name: "test",
-									Id:   msg.SenderId,
-								},
 								ConversationId: msg.ConversationId,
 							},
 							Data: response.InfoMessageResponse{
 								MessageId:  msg.Uuid,
 								Content:    msg.Content,
 								Timestamp:  msg.CreatedAt,
-								SenderType: "AGENT",
+								SenderType: senderType,
 							},
+						}
+
+						if agentResponse != nil {
+							message.Conversation.Agent = *agentResponse
+						}
+
+						if contactResponse != nil {
+							message.Conversation.Contact = *contactResponse
 						}
 
 						if client.ConversationId == msg.ConversationId {
